@@ -725,7 +725,11 @@ class NanoSidebandApp(App):
         self.config_data = {}
 
     def build(self):
-        Builder.load_string(KV)
+        try:
+            Builder.load_string(KV)
+        except Exception as e:
+            from kivy.uix.label import Label
+            return Label(text=f'KV Error: {e}', color=(1,0,0,1))
         self.sm = ScreenManager()
         for S in (SplashScreen, ConvScreen, MsgScreen, NewConvScreen,
                   RNodeScreen, SettingsScreen):
@@ -808,17 +812,16 @@ class NanoSidebandApp(App):
         try:
             self._write_rns_config()
             from nano.config import NanoConfig
-            from nano.db import NanoDB
             from nano.core import NanoCore
             cfg = NanoConfig(base_dir=APP_DIR)
             if self.config_data.get("display_name"):
                 cfg["display_name"] = self.config_data["display_name"]
-            self.db = NanoDB(os.path.join(APP_DIR,"nano.db"))
-            core = NanoCore(cfg, self.db)
+            core = NanoCore(cfg)
             core.on_message(self._on_message)
             core.on_delivery_status(self._on_status)
-            core.start()
+            core.start()          # opens db inside
             self.core = core
+            self.db   = core.db   # share the already-open db instance
             Clock.schedule_once(lambda dt: self._rns_ready(), 0)
         except Exception as e:
             err = str(e)

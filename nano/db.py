@@ -117,7 +117,7 @@ class NanoDB:
 
     def _db(self) -> sqlite3.Connection:
         if self._conn is None:
-            raise RuntimeError("Database not open — call open() first.")
+            self.open()   # auto-open on first use (Android-friendly)
         return self._conn
 
     # ── Contacts ──────────────────────────────────────────────────────────────
