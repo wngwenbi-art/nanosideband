@@ -54,7 +54,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-v3-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v2
+          key: buildozer-v4-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v2
           restore-keys: |
             buildozer-${{ runner.os }}-
 
