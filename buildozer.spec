@@ -8,7 +8,6 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,txt,json
 source.include_patterns = sbapp/*,nano/*
 
-entrypoint = sbapp/main.py
 
 # Simplified requirements — no pinned python3, known working set
 requirements = python3,kivy==2.3.0,pillow,cryptography,pyopenssl,cffi,pycparser,setuptools
