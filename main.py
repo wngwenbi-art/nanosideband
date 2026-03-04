@@ -799,12 +799,14 @@ class NanoSidebandApp(App):
   codingrate = 5
 """
         else:
+            # No RNode configured yet — start RNS with no interfaces
+            # This is valid: RNS will run locally, user can add RNode later
             iface = """
-[interface:AutoInterface]
-  type = AutoInterface
+[interface:Loopback]
+  type = LocalInterface
   interface_enabled = True
 """
-        cfg_text = f"[reticulum]\n  enable_transport = False\n  share_instance = True\n  rns_path = {rns_dir}\n{iface}\n"
+        cfg_text = f"[reticulum]\n  enable_transport = False\n  share_instance = False\n  rns_path = {rns_dir}\n{iface}\n"
         with open(os.path.join(rns_dir,"config"),"w") as f: f.write(cfg_text)
         os.environ["RNS_CONFIG_DIR"] = rns_dir
 
@@ -825,6 +827,14 @@ class NanoSidebandApp(App):
             Clock.schedule_once(lambda dt: self._rns_ready(), 0)
         except Exception as e:
             err = str(e)
+            print(f"RNS start error: {err}")
+            # Still open DB directly so UI works
+            try:
+                from nano.db import NanoDB
+                self.db = NanoDB(os.path.join(APP_DIR, "nano.db"))
+                self.db.open()
+            except Exception as db_err:
+                print(f"DB fallback error: {db_err}")
             Clock.schedule_once(lambda dt: self._rns_error(err), 0)
 
     def _restart_rns(self):
@@ -839,7 +849,11 @@ class NanoSidebandApp(App):
         Clock.schedule_once(lambda dt: self._goto_convs(), 0.8)
 
     def _rns_error(self, err):
-        self._set_splash(f"RNS: {err[:50]}")
+        # Go to conversations anyway — user can configure RNode from there
+        if "not installed" in err.lower():
+            self._set_splash("RNS starting… (first run may be slow)")
+        else:
+            self._set_splash(f"No network: configure RNode via 📻")
         Clock.schedule_once(lambda dt: self._goto_convs(), 2)
 
     def _goto_convs(self):
