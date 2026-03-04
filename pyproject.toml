@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "nanosideband"
+version = "0.1.0"
+description = "Lightweight LXMF messaging client — text and images only"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["reticulum", "lxmf", "mesh", "messaging", "radio"]
+
+dependencies = [
+    "rns>=0.7.0",
+    "lxmf>=0.4.0",
+    "pillow>=10.0",
+    "textual>=0.50",
+    "flask>=3.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-timeout"]
+
+[project.scripts]
+nanosideband = "nano.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nano*"]
