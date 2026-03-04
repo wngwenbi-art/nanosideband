@@ -4,8 +4,6 @@ on:
   push:
     branches: [ main, master ]
     tags:     [ 'v*' ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -47,37 +45,40 @@ jobs:
             lld \
             ccache
 
-      - name: Install Python build tools
+      - name: Install buildozer and Cython
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.37 virtualenv
 
-      - name: Cache buildozer global directory
+      - name: Cache buildozer directory
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v2
           restore-keys: |
             buildozer-${{ runner.os }}-
 
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        with:
-          path: ~/.android
-          key: android-sdk-${{ runner.os }}-33
-          restore-keys: |
-            android-sdk-${{ runner.os }}-
+      - name: Point buildozer at pre-installed NDK
+        run: |
+          # Use NDK already on runner instead of downloading
+          mkdir -p ~/.buildozer/android/platform
+          ln -sfn $ANDROID_NDK_HOME \
+            ~/.buildozer/android/platform/android-ndk-r25b || true
+          echo "NDK location: $ANDROID_NDK_HOME"
 
-      - name: Build APK with buildozer
+      - name: Build APK
         run: buildozer -v android debug 2>&1 | tee buildozer_output.log
+        env:
+          ANDROIDSDK: ${{ env.ANDROID_HOME }}
+          ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
+          ANDROIDAPI: "33"
+          ANDROIDMINAPI: "26"
 
       - name: Find APK
         id: find_apk
         run: |
-          APK=$(find . -name "*.apk" -not -path "*/.buildozer/*" | head -1)
-          if [ -z "$APK" ]; then
-            APK=$(find ~/.buildozer -name "*.apk" | head -1)
-          fi
+          APK=$(find . -name "*.apk" | grep -v ".buildozer/android/platform" | head -1)
+          [ -z "$APK" ] && APK=$(find .buildozer -name "*.apk" | head -1)
           echo "apk_path=$APK" >> $GITHUB_OUTPUT
           echo "Found: $APK"
 
@@ -102,6 +103,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.find_apk.outputs.apk_path }}
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
