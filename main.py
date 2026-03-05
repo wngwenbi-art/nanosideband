@@ -848,13 +848,10 @@ class NanoSidebandApp(App):
         self._set_splash("Connected!")
         Clock.schedule_once(lambda dt: self._goto_convs(), 0.8)
 
-    def _rns_error(self, err):
-        # Go to conversations anyway — user can configure RNode from there
-        if "not installed" in err.lower():
-            self._set_splash("RNS starting… (first run may be slow)")
-        else:
-            self._set_splash(f"No network: configure RNode via 📻")
-        Clock.schedule_once(lambda dt: self._goto_convs(), 2)
+   def _rns_error(self, err):
+    self._set_splash(f"Error: {err[:80]}")
+    Clock.schedule_once(lambda dt: self._goto_convs(), 3)
+
 
     def _goto_convs(self):
         self.sm.transition = SlideTransition(direction="left")

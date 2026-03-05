@@ -31,7 +31,8 @@ _LXMF_AVAILABLE = False
 try:
     import RNS
     _RNS_AVAILABLE = True
-except ImportError:
+except Exception as _rns_err:
+    print(f"RNS import failed: {_rns_err}")
     pass
 
 try:
