@@ -54,9 +54,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-v4-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v2
+          key: buildozer-v6-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-${{ runner.os }}-
+            buildozer-v6-${{ runner.os }}-
 
       - name: Point buildozer at pre-installed NDK
         run: |
