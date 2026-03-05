@@ -773,20 +773,36 @@ class RNodeScreen(Screen):
                     UUID.fromString(SPP_UUID)
                 )
                 socket.connect()
-                # Send RNode ping (0x3A = getconf)
                 out = socket.getOutputStream()
-                out.write([0x3A])
-                out.flush()
-                time.sleep(0.3)
                 inp = socket.getInputStream()
+                # Send proper RNode detect: FEND CMD_DETECT DETECT_REQ FEND
+                detect_frame = bytes([0xC0, 0x08, 0x73, 0xC0])
+                out.write(bytearray(detect_frame), 0, len(detect_frame))
+                out.flush()
+                # Wait for detect response
+                deadline = time.time() + 3.0
                 resp = bytearray()
-                while inp.available() > 0:
-                    resp.append(inp.read())
+                detected = False
+                while time.time() < deadline:
+                    avail = inp.available()
+                    if avail > 0:
+                        chunk = bytearray(avail)
+                        inp.read(chunk, 0, avail)
+                        resp += chunk
+                        # Check for DETECT_RESP (0x46) after CMD_DETECT (0x08)
+                        if 0x46 in resp:
+                            detected = True
+                            break
+                    else:
+                        time.sleep(0.05)
                 socket.close()
-                if resp:
-                    msg = f"RNode responded ({len(resp)} bytes) ✓"
+                hex_str = resp.hex().upper() if resp else "none"
+                if detected:
+                    msg = f"RNode detected! ✓ ({hex_str})"
+                elif resp:
+                    msg = f"Connected, unexpected response: {hex_str}"
                 else:
-                    msg = "Connected but no response (may still work)"
+                    msg = "Connected but no response"
             else:
                 msg = f"Desktop: would connect to {addr}"
         except Exception as e:
