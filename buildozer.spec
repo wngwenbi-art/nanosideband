@@ -10,7 +10,7 @@ source.include_patterns = sbapp/*,nano/*
 
 
 # Simplified requirements — no pinned python3, known working set
-requirements = python3,kivy==2.3.0,pillow,cryptography,pyopenssl,cffi,pycparser,setuptools,rns,lxmf
+requirements = python3,kivy==2.3.0,pillow,cryptography,pyopenssl,cffi,pycparser,setuptools,rns,lxmf, able_recipe
 
 android.api = 33
 android.minapi = 26
@@ -23,6 +23,7 @@ android.permissions =
     BLUETOOTH_ADMIN,
     BLUETOOTH_CONNECT,
     BLUETOOTH_SCAN,
+    BLUETOOTH_ADVERTISE,
     ACCESS_FINE_LOCATION,
     ACCESS_COARSE_LOCATION,
     READ_EXTERNAL_STORAGE,
