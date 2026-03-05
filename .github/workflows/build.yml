@@ -39,11 +39,8 @@ jobs:
             pkg-config \
             zlib1g-dev \
             libncurses5-dev libncursesw5-dev \
-            cmake \
-            libltdl-dev \
-            libsqlite3-dev \
-            lld \
-            ccache
+            cmake libltdl-dev libsqlite3-dev lld ccache \
+            libbz2-dev
 
       - name: Install buildozer and Cython
         run: |
@@ -54,9 +51,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-v7-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v10-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-v7-${{ runner.os }}-
+            buildozer-v10-${{ runner.os }}-
 
       - name: Build APK
         run: buildozer -v android debug 2>&1 | tee buildozer_output.log
@@ -65,6 +62,13 @@ jobs:
           ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
           ANDROIDAPI: "33"
           ANDROIDMINAPI: "26"
+
+      - name: Verify RNS in APK
+        run: |
+          APK=$(find .buildozer -name "*.apk" | head -1)
+          if [ -n "$APK" ]; then
+            unzip -l "$APK" | grep -i "rns\|lxmf\|reticulum" | head -20 || echo "RNS files not found in APK"
+          fi
 
       - name: Find APK
         id: find_apk
@@ -89,11 +93,3 @@ jobs:
           name: buildozer-log
           path: buildozer_output.log
           retention-days: 7
-
-      - name: Create Release on tag
-        if: startsWith(github.ref, 'refs/tags/v') && steps.find_apk.outputs.apk_path != ''
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ steps.find_apk.outputs.apk_path }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -8,7 +8,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,txt,json
 source.include_patterns = sbapp/*,nano/*
 
-requirements = python3,kivy==2.3.0,pillow,cryptography,pyopenssl,cffi,pycparser,setuptools,rns,lxmf
+requirements = python3,kivy==2.3.0,pillow,cryptography,pyopenssl,cffi,pycparser,setuptools,libbz2,rns,lxmf
 
 android.api = 33
 android.minapi = 26
