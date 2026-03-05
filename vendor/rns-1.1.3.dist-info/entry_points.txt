@@ -1,0 +1,11 @@
+[console_scripts]
+rncp = RNS.Utilities.rncp:main
+rnid = RNS.Utilities.rnid:main
+rnir = RNS.Utilities.rnir:main
+rnodeconf = RNS.Utilities.rnodeconf:main
+rnpath = RNS.Utilities.rnpath:main
+rnpkg = RNS.Utilities.rnpkg:main
+rnprobe = RNS.Utilities.rnprobe:main
+rnsd = RNS.Utilities.rnsd:main
+rnstatus = RNS.Utilities.rnstatus:main
+rnx = RNS.Utilities.rnx:main
