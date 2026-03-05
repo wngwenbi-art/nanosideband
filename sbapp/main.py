@@ -996,7 +996,8 @@ class NanoSidebandApp(App):
 [interface:RNode BT]
   type = RNodeInterface
   interface_enabled = True
-  target_device = {bt_addr}
+  allow_bluetooth = True
+  target_device_address = {bt_addr}
   target_device_name = {bt_name}
   frequency = {int(freq)}
   bandwidth = {bw}
