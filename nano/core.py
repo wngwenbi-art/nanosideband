@@ -163,8 +163,44 @@ class NanoCore:
 
         log.info("NanoCore ready.")
 
+    def attach_rnode_bt(self, bt_addr: str, frequency: int, bandwidth: int,
+                        spreading_factor: int, tx_power: int,
+                        coding_rate: int = 5) -> str:
+        """
+        Attach a custom RFCOMM RNode interface to the running RNS instance.
+        Returns status string. Call after start().
+        """
+        try:
+            from nano.rnode_bt import make_rns_interface
+            iface = make_rns_interface(
+                bt_addr=bt_addr,
+                frequency=frequency,
+                bandwidth=bandwidth,
+                spreading_factor=spreading_factor,
+                tx_power=tx_power,
+                coding_rate=coding_rate,
+            )
+            if iface is None:
+                return "Failed to create interface"
+            ok = iface.start()
+            if ok:
+                RNS.Transport.interfaces.append(iface)
+                self.rnode_interface = iface
+                log.info("RNode BT interface attached: %s", bt_addr)
+                return "RNode connected"
+            else:
+                return iface.status
+        except Exception as e:
+            log.error("attach_rnode_bt error: %s", e)
+            return f"Error: {e}"
+
     def stop(self) -> None:
         self._running = False
+        if hasattr(self, 'rnode_interface') and self.rnode_interface:
+            try:
+                self.rnode_interface.stop()
+            except Exception:
+                pass
         self.db.close()
         log.info("NanoCore stopped.")
 

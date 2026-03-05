@@ -679,9 +679,33 @@ class RNodeScreen(Screen):
             "rnode_txp":  self.ids.txp_inp.text,
         })
         app._save_config()
-        self.rnode_status = f"Saved! Reconnecting to {addr}…"
-        threading.Thread(target=app._restart_rns, daemon=True).start()
-        Clock.schedule_once(lambda dt: self.go_back(), 2)
+        self.rnode_status = f"Connecting to {addr}…"
+        threading.Thread(target=self._do_connect, args=(addr,), daemon=True).start()
+
+    def _do_connect(self, addr):
+        app = App.get_running_app()
+        if app.core:
+            freq = int(float(app.config_data.get("rnode_freq", 915.0)) * 1e6)
+            bw   = int(app.config_data.get("rnode_bw",  125)) * 1000
+            sf   = int(app.config_data.get("rnode_sf",  8))
+            txp  = int(app.config_data.get("rnode_txp", 17))
+            # Detach old interface if any
+            if hasattr(app.core, 'rnode_interface') and app.core.rnode_interface:
+                try:
+                    app.core.rnode_interface.stop()
+                    import RNS
+                    if app.core.rnode_interface in RNS.Transport.interfaces:
+                        RNS.Transport.interfaces.remove(app.core.rnode_interface)
+                except Exception:
+                    pass
+            status = app.core.attach_rnode_bt(
+                bt_addr=addr, frequency=freq,
+                bandwidth=bw, spreading_factor=sf, tx_power=txp)
+            Clock.schedule_once(lambda dt: setattr(self, "rnode_status", status), 0)
+        else:
+            # RNS not started yet — just save, it will connect on next start
+            Clock.schedule_once(lambda dt: setattr(
+                self, "rnode_status", "Saved! Will connect on restart."), 0)
 
     def go_back(self):
         app = App.get_running_app()
@@ -823,11 +847,23 @@ class NanoSidebandApp(App):
             core.start()          # opens db inside
             self.core = core
             self.db   = core.db   # share the already-open db instance
+
+            # Attach RNode BT interface directly via RFCOMM (bypasses RNS BLE)
+            bt_addr = self.config_data.get("rnode_bt_addr", "")
+            if bt_addr and ANDROID:
+                freq = int(float(self.config_data.get("rnode_freq", 915.0)) * 1e6)
+                bw   = int(self.config_data.get("rnode_bw",  125)) * 1000
+                sf   = int(self.config_data.get("rnode_sf",  8))
+                txp  = int(self.config_data.get("rnode_txp", 17))
+                status = core.attach_rnode_bt(
+                    bt_addr=bt_addr, frequency=freq,
+                    bandwidth=bw, spreading_factor=sf, tx_power=txp)
+                print(f"RNode BT: {status}")
+
             Clock.schedule_once(lambda dt: self._rns_ready(), 0)
         except Exception as e:
             err = str(e)
             print(f"RNS start error: {err}")
-            # Still open DB directly so UI works
             try:
                 from nano.db import NanoDB
                 self.db = NanoDB(os.path.join(APP_DIR, "nano.db"))
