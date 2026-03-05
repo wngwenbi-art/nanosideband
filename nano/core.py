@@ -31,14 +31,16 @@ _LXMF_AVAILABLE = False
 try:
     import RNS
     _RNS_AVAILABLE = True
-except ImportError:
-    pass
+except Exception as _rns_import_err:
+    print(f"[CORE] RNS import FAILED: {type(_rns_import_err).__name__}: {_rns_import_err}")
+    import traceback
+    traceback.print_exc()
 
 try:
     import LXMF
     _LXMF_AVAILABLE = True
-except ImportError:
-    pass
+except Exception as _lxmf_import_err:
+    print(f"[CORE] LXMF import FAILED: {type(_lxmf_import_err).__name__}: {_lxmf_import_err}")
 
 APP_NAME          = "nanosideband"
 LXMF_APP_NAME     = "lxmf"
@@ -98,10 +100,24 @@ class NanoCore:
         self.db.open()
 
         # 1. Boot Reticulum
-        # configdir=None uses ~/.reticulum automatically
-        # loglevel uses real RNS constant: LOG_WARNING = 2
+        # Write a minimal config with no interfaces so RNS does NOT
+        # auto-load the Android BLE interface (which crashes on able_recipe).
+        # We attach our own RFCOMM interface after startup.
+        import os, sys
+        if hasattr(sys, 'getandroidapilevel'):
+            # Running on Android — write blank config to suppress BLE interface
+            from android.storage import app_storage_path  # type: ignore
+            _rns_cfgdir = os.path.join(app_storage_path(), "reticulum")
+            os.makedirs(_rns_cfgdir, exist_ok=True)
+            _rns_cfg = os.path.join(_rns_cfgdir, "config")
+            if not os.path.exists(_rns_cfg):
+                with open(_rns_cfg, "w") as f:
+                    f.write("[reticulum]\n  enable_transport = False\n  share_instance = False\n")
+        else:
+            _rns_cfgdir = None
+
         self.reticulum = RNS.Reticulum(
-            configdir = None,
+            configdir = _rns_cfgdir,
             loglevel  = RNS.LOG_WARNING,
         )
         log.info("Reticulum started.")
