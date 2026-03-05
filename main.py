@@ -790,8 +790,7 @@ class NanoSidebandApp(App):
 [interface:RNode BT]
   type = RNodeInterface
   interface_enabled = True
-  target_device = {bt_addr}
-  target_device_name = {name}
+  port = ble://{bt_addr}
   frequency = {int(freq)}
   bandwidth = {bw}
   txpower = {txp}
