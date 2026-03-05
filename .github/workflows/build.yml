@@ -54,17 +54,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-v6-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v7-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-v6-${{ runner.os }}-
-
-      - name: Point buildozer at pre-installed NDK
-        run: |
-          # Use NDK already on runner instead of downloading
-          mkdir -p ~/.buildozer/android/platform
-          ln -sfn $ANDROID_NDK_HOME \
-            ~/.buildozer/android/platform/android-ndk-r25b || true
-          echo "NDK location: $ANDROID_NDK_HOME"
+            buildozer-v7-${{ runner.os }}-
 
       - name: Build APK
         run: buildozer -v android debug 2>&1 | tee buildozer_output.log
