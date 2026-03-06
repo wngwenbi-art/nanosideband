@@ -59,7 +59,7 @@ class NanoCore:
         core.stop()
     """
 
-    def __init__(self, config):
+    def __init__(self, config, db=None):
         self.config = config
 
         # Named to match Sideband conventions for easy cross-reference
@@ -105,14 +105,11 @@ class NanoCore:
         # We attach our own RFCOMM interface after startup.
         import os, sys
         if hasattr(sys, 'getandroidapilevel'):
-            # Running on Android — write blank config to suppress BLE interface
             from android.storage import app_storage_path  # type: ignore
             _rns_cfgdir = os.path.join(app_storage_path(), "reticulum")
             os.makedirs(_rns_cfgdir, exist_ok=True)
             _rns_cfg = os.path.join(_rns_cfgdir, "config")
-            if not os.path.exists(_rns_cfg):
-                with open(_rns_cfg, "w") as f:
-                    f.write("[reticulum]\n  enable_transport = False\n  share_instance = False\n")
+            self._write_rns_config(_rns_cfg)
         else:
             _rns_cfgdir = None
 
@@ -210,7 +207,47 @@ class NanoCore:
             log.error("attach_rnode_bt error: %s", e)
             return f"Error: {e}"
 
-    def stop(self) -> None:
+    def _write_rns_config(self, config_path: str) -> None:
+        """
+        Write RNS config file. If BT RNode is configured, include it as an
+        interface so RNS connects using its built-in AndroidBluetoothManager —
+        the same way Sideband does it.
+        """
+        bt_addr = self.config.get("rnode_bt_addr", "").strip()
+
+        lines = [
+            "[reticulum]",
+            "  enable_transport = False",
+            "  share_instance = False",
+            "",
+        ]
+
+        if bt_addr:
+            freq   = self.config.get("rnode_freq", "868000000")
+            bw     = self.config.get("rnode_bw",   "125000")
+            sf     = self.config.get("rnode_sf",   "8")
+            txp    = self.config.get("rnode_txp",  "14")
+            lines += [
+                "[RNode BT]",
+                "  type = RNodeInterface",
+                "  interface_enabled = True",
+                "  allow_bluetooth = True",
+                f"  target_device_address = {bt_addr}",
+                f"  frequency = {freq}",
+                f"  bandwidth = {bw}",
+                f"  spreadingfactor = {sf}",
+                f"  txpower = {txp}",
+                "  codingrate = 5",
+                "",
+            ]
+            print(f"[CORE] RNS config: RNode BT interface at {bt_addr}")
+        else:
+            print("[CORE] RNS config: no RNode configured (no interfaces)")
+
+        with open(config_path, "w") as f:
+            f.write("\n".join(lines))
+
+        def stop(self) -> None:
         self._running = False
         if hasattr(self, 'rnode_interface') and self.rnode_interface:
             try:

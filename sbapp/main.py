@@ -962,10 +962,12 @@ class NanoSidebandApp(App):
             db = NanoDB(os.path.join(APP_DIR, "nano.db"))
             self.db = db
 
-            # Build RNS config with RNode BT if configured
-            self._write_rns_config(cfg)
+            # Sync saved settings into cfg so core.py writes correct RNS config
+            for key in ["rnode_bt_addr","rnode_bt_name","rnode_freq","rnode_bw","rnode_sf","rnode_txp"]:
+                if key in self.config_data:
+                    cfg[key] = self.config_data[key]
 
-            core = NanoCore(cfg, db)
+            core = NanoCore(cfg)
             core.on_message(self._on_message)
             core.on_delivery_status(self._on_status)
             core.start()
