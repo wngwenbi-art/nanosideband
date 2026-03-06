@@ -247,7 +247,7 @@ class NanoCore:
         with open(config_path, "w") as f:
             f.write("\n".join(lines))
 
-      def stop(self) -> None:
+    def stop(self) -> None:
         self._running = False
         if hasattr(self, 'rnode_interface') and self.rnode_interface:
             try:
