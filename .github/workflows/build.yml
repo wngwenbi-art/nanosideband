@@ -51,43 +51,39 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-v10-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v11-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-v10-${{ runner.os }}-
+            buildozer-v11-${{ runner.os }}-
 
-      - name: Apply RNS patches
-        run: |
-          PATCH_SRC="patches/RNS/Interfaces/Android/RNodeInterface.py"
-          # Patch any already-extracted RNS copies in buildozer cache
-          find ~/.buildozer .buildozer -path "*/RNS/Interfaces/Android/RNodeInterface.py" 2>/dev/null | while read f; do
-            cp "$PATCH_SRC" "$f"
-            echo "Patched: $f"
-          done
-          # Stage into app dir so buildozer includes it
-          mkdir -p ".buildozer/android/app/RNS/Interfaces/Android"
-          cp "$PATCH_SRC" ".buildozer/android/app/RNS/Interfaces/Android/"
-
-      - name: Build APK
-        run: |
-          buildozer -v android debug 2>&1 | tee buildozer_output.log
-          # Re-apply patches in case buildozer re-extracted RNS during build
-          PATCH_SRC="patches/RNS/Interfaces/Android/RNodeInterface.py"
-          find .buildozer -path "*/RNS/Interfaces/Android/RNodeInterface.py" 2>/dev/null | while read f; do
-            cp "$PATCH_SRC" "$f"
-            echo "Post-build patched: $f"
-          done
+      - name: Build APK (pass 1 - install packages, ignore compile errors)
+        run: buildozer -v android debug 2>&1 | tee buildozer_output.log || true
         env:
           ANDROIDSDK: ${{ env.ANDROID_HOME }}
           ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
           ANDROIDAPI: "33"
           ANDROIDMINAPI: "26"
 
-      - name: Verify RNS in APK
+      - name: Patch RNS RNodeInterface
         run: |
-          APK=$(find .buildozer -name "*.apk" | head -1)
-          if [ -n "$APK" ]; then
-            unzip -l "$APK" | grep -i "rns\|lxmf\|reticulum" | head -20 || echo "RNS files not found in APK"
-          fi
+          PATCH="patches/RNS/Interfaces/Android/RNodeInterface.py"
+          echo "Searching for RNodeInterface.py to patch..."
+          FOUND=0
+          find ~/.buildozer .buildozer -name "RNodeInterface.py" 2>/dev/null | while read f; do
+            if echo "$f" | grep -q "Android"; then
+              echo "Patching: $f"
+              cp "$PATCH" "$f"
+              FOUND=1
+            fi
+          done
+          echo "Patch step complete"
+
+      - name: Build APK (pass 2 - compile and package with patched files)
+        run: buildozer -v android debug 2>&1 | tee -a buildozer_output.log
+        env:
+          ANDROIDSDK: ${{ env.ANDROID_HOME }}
+          ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
+          ANDROIDAPI: "33"
+          ANDROIDMINAPI: "26"
 
       - name: Find APK
         id: find_apk
