@@ -6,7 +6,7 @@ version = 0.5.0
 
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,txt,json
-source.include_patterns = sbapp/*,nano/*
+source.include_patterns = sbapp/*,nano/*,patches/*
 
 requirements = python3,kivy==2.3.0,pillow,cryptography,pyopenssl,cffi,pycparser,setuptools,libbz2,rns,lxmf
 
@@ -32,6 +32,7 @@ orientation = portrait
 fullscreen = 0
 
 p4a.branch = master
+p4a.hook = p4a_hook.py
 
 [buildozer]
 log_level = 2

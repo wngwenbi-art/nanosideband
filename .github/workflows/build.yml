@@ -55,8 +55,27 @@ jobs:
           restore-keys: |
             buildozer-v10-${{ runner.os }}-
 
+      - name: Apply RNS patches
+        run: |
+          PATCH_SRC="patches/RNS/Interfaces/Android/RNodeInterface.py"
+          # Patch any already-extracted RNS copies in buildozer cache
+          find ~/.buildozer .buildozer -path "*/RNS/Interfaces/Android/RNodeInterface.py" 2>/dev/null | while read f; do
+            cp "$PATCH_SRC" "$f"
+            echo "Patched: $f"
+          done
+          # Stage into app dir so buildozer includes it
+          mkdir -p ".buildozer/android/app/RNS/Interfaces/Android"
+          cp "$PATCH_SRC" ".buildozer/android/app/RNS/Interfaces/Android/"
+
       - name: Build APK
-        run: buildozer -v android debug 2>&1 | tee buildozer_output.log
+        run: |
+          buildozer -v android debug 2>&1 | tee buildozer_output.log
+          # Re-apply patches in case buildozer re-extracted RNS during build
+          PATCH_SRC="patches/RNS/Interfaces/Android/RNodeInterface.py"
+          find .buildozer -path "*/RNS/Interfaces/Android/RNodeInterface.py" 2>/dev/null | while read f; do
+            cp "$PATCH_SRC" "$f"
+            echo "Post-build patched: $f"
+          done
         env:
           ANDROIDSDK: ${{ env.ANDROID_HOME }}
           ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
