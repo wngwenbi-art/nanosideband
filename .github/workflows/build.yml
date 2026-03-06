@@ -51,34 +51,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-v11-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v12-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-v11-${{ runner.os }}-
+            buildozer-v12-${{ runner.os }}-
 
-      - name: Build APK (pass 1 - install packages, ignore compile errors)
-        run: buildozer -v android debug 2>&1 | tee buildozer_output.log || true
-        env:
-          ANDROIDSDK: ${{ env.ANDROID_HOME }}
-          ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
-          ANDROIDAPI: "33"
-          ANDROIDMINAPI: "26"
-
-      - name: Patch RNS RNodeInterface
-        run: |
-          PATCH="patches/RNS/Interfaces/Android/RNodeInterface.py"
-          echo "Searching for RNodeInterface.py to patch..."
-          FOUND=0
-          find ~/.buildozer .buildozer -name "RNodeInterface.py" 2>/dev/null | while read f; do
-            if echo "$f" | grep -q "Android"; then
-              echo "Patching: $f"
-              cp "$PATCH" "$f"
-              FOUND=1
-            fi
-          done
-          echo "Patch step complete"
-
-      - name: Build APK (pass 2 - compile and package with patched files)
-        run: buildozer -v android debug 2>&1 | tee -a buildozer_output.log
+      - name: Build APK
+        run: buildozer -v android debug 2>&1 | tee buildozer_output.log
         env:
           ANDROIDSDK: ${{ env.ANDROID_HOME }}
           ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
